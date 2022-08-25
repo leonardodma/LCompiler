@@ -6,70 +6,79 @@ class Token():
 
 class Tokenizer():
     def __init__(self, source: str):
-        self.source = source.replace(" ", "")
+        self.source = source
         self.position = 0
         self.operations = {"+": "PLUS", "-": "MINUS"}
 
         value = ""
-        for char in self.source:
-            if char != " ":
-                if value == "" and char in self.operations.keys():
-                    raise ValueError(
-                        "Invalid sintax: your input should not start with an operation")
-                elif value != "" and char in self.operations.keys():
-                    self.next = Token("INT", int(value))
-                    break
-                elif self.position + 1 >= len(self.source):
-                    value += char
-                    self.next = Token("INT", int(value))
-                    break
-                elif char.isdigit():
-                    value += char
-                else:
-                    raise ValueError(f"Invalid sintax: invalid token '{char}'")
+        for token in self.source:
+            if value == "" and (token in self.operations.keys() or token == " "):
+                raise ValueError(
+                    "Invalid sintax: your input should not start with an operation or empty string.")
+            elif value != "" and (token in self.operations.keys() or token == " "):
+                self.next = Token("INT", int(value))
+                break
+            elif self.position + 1 >= len(self.source):
+                value += token
+                self.next = Token("INT", int(value))
+                break
+            elif token.isdigit():
+                value += token
+            else:
+                raise ValueError(f"Invalid sintax: invalid token '{token}'")
 
-            self.position += 1
+        self.position += 1
 
     def selectNext(self):
         if self.position >= len(self.source):
+            if self.next.value in self.operations.keys():
+                raise ValueError(
+                    "Invalid sintax: string must not end with an operation")
             self.next = Token("EOP", None)
         else:
             source = self.source[self.position:]
+            print("Source:" + source)
+            space = False
             value = ""
+            i = 0
+            for token in source:
+                print("Value: " + value)
+                print("Token: " + token)
+                if token == " ":
+                    space = True
+                    self.position += 1
+                    if i + 1 >= len(source) and value.isdigit():
+                        self.next = Token("INT", int(value))
+                        break
 
-            for i in range(len(source)):
-                char = source[i]
+                elif token.isdigit():
+                    value += token
+                    self.position += 1
 
-                if char != " ":
-                    if char.isdigit() or char in self.operations.keys():
-                        if char.isdigit():
-                            value += char
-                            # End of operation
-                            if i + 1 >= len(source):
-                                self.next = Token("INT", int(value))
-                                self.position += 1
-                                break
-
-                        else:
-                            if value == "":
-                                if self.next.type in self.operations.values():
-                                    raise ValueError(
-                                        "Invalid Sintax: two operators in a row")
-                                elif i + 1 >= len(source):
-                                    raise ValueError(
-                                        "Can not end with an operator")
-                                self.next = Token(self.operations[char], char)
-                                self.position += 1
-
-                            else:
-                                self.next = Token("INT", int(value))
-
-                            break
-                    else:
+                    if space and self.next.value not in self.operations.keys():
                         raise ValueError(
-                            f"Invalid sintax: invalid token '{char}'")
+                            f"Invalid sintax: no operations between numbers")
+                    elif i + 1 >= len(source):
+                        self.next = Token("INT", int(value))
+                        break
 
-                self.position += 1
+                elif value != "" and (token in self.operations.keys() or token == " "):
+                    self.next = Token("INT", int(value))
+                    break
+
+                elif value == "" and token in self.operations.keys():
+                    if self.next.type != "INT":
+                        raise ValueError(
+                            f"Invalid Sintax: two operators in a row")
+                    self.next = Token(self.operations[token], token)
+                    self.position += 1
+                    break
+
+                else:
+                    print("Entrou")
+                    print(token)
+
+                i += 1
 
 
 class Parser():
@@ -78,10 +87,14 @@ class Parser():
     @ staticmethod
     def parseExpression():
         total = Parser.tokenizer.next.value
+
         while Parser.tokenizer.next.type != "EOP":
             Parser.tokenizer.selectNext()
+            print(Parser.tokenizer.next.value)
+            print(Parser.tokenizer.next.type)
+            print("----------")
 
-            if Parser.tokenizer.next.type == "PLUS": 
+            if Parser.tokenizer.next.type == "PLUS":
                 Parser.tokenizer.selectNext()
                 total += Parser.tokenizer.next.value
             elif Parser.tokenizer.next.type == "MINUS":
