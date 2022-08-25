@@ -1,7 +1,3 @@
-
-from curses.ascii import isdigit
-
-
 class Token():
     def __init__(self, type: str, value):
         self.type = type
