@@ -37,13 +37,10 @@ class Tokenizer():
             self.next = Token("EOP", None)
         else:
             source = self.source[self.position:]
-            print("Source:" + source)
             space = False
             value = ""
             i = 0
             for token in source:
-                print("Value: " + value)
-                print("Token: " + token)
                 if token == " ":
                     space = True
                     self.position += 1
@@ -75,8 +72,7 @@ class Tokenizer():
                     break
 
                 else:
-                    print("Entrou")
-                    print(token)
+                    pass
 
                 i += 1
 
@@ -90,9 +86,9 @@ class Parser():
 
         while Parser.tokenizer.next.type != "EOP":
             Parser.tokenizer.selectNext()
-            print(Parser.tokenizer.next.value)
-            print(Parser.tokenizer.next.type)
-            print("----------")
+            #print(Parser.tokenizer.next.value)
+            #print(Parser.tokenizer.next.type)
+            #print("----------")
 
             if Parser.tokenizer.next.type == "PLUS":
                 Parser.tokenizer.selectNext()
