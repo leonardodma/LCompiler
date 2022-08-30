@@ -32,6 +32,7 @@ class Tokenizer():
                 break
             elif self.position + 1 >= len(self.source):
                 value += token
+                self.position += 1
                 self.next = Token("INT", int(value))
                 break
             elif token.isdigit():
@@ -39,16 +40,16 @@ class Tokenizer():
             else:
                 raise ValueError(f"Invalid sintax: invalid token '{token}'")
 
-        self.position += 1
+            self.position += 1
 
     def selectNext(self):
-        if self.position >= len(self.source):
+        source = self.source[self.position:]
+        if self.position >= len(self.source) or source.replace(" ", "") == "":
             if self.next.value in self.operations.keys():
                 raise ValueError(
                     "Invalid sintax: string must not end with an operation")
             self.next = Token("EOP", None)
         else:
-            source = self.source[self.position:]
             space = False
             value = ""
             i = 0
@@ -104,9 +105,10 @@ class Parser():
             if op_type == "MINUS":
                 total -= value
             else:
-                total += value
+                if op_type != "EOP":
+                    total += value
 
-            #Parser.tokenizer.selectNext()
+            # Parser.tokenizer.selectNext()
 
         return total
 
