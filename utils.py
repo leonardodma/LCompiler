@@ -1,15 +1,27 @@
+from signal import signal
+
+
 class Token():
     def __init__(self, type: str, value):
         self.type = type
         self.value = value
 
 
+class PrePro():
+    @staticmethod
+    def filter(source: str):
+        return source.split("//")[0]
+
+
 class Tokenizer():
     def __init__(self, source: str):
-        self.source = source
+        self.source = PrePro.filter(source)
         self.position = 0
-        self.operations = {"+": "PLUS", "-": "MINUS"}
+        self.operations = {"+": "PLUS", "-": "MINUS", "*": "MULT", "/": "DIV"}
 
+        self.fistToken()
+
+    def fistToken(self):
         value = ""
         for token in self.source:
             if value == "" and (token in self.operations.keys() or token == " "):
@@ -70,32 +82,53 @@ class Tokenizer():
                     self.next = Token(self.operations[token], token)
                     self.position += 1
                     break
-
                 else:
-                    pass
+                    raise ValueError(
+                        f"Invalid sintax: invalid token '{token}'")
 
                 i += 1
 
 
 class Parser():
     tokenizer = None
+    term = ["MULT", "DIV"]
+    expression = ["PLUS", "MINUS"]
 
     @ staticmethod
     def parseExpression():
-        total = Parser.tokenizer.next.value
-
+        total = 0
         while Parser.tokenizer.next.type != "EOP":
-            Parser.tokenizer.selectNext()
-            #print(Parser.tokenizer.next.value)
-            #print(Parser.tokenizer.next.type)
-            #print("----------")
+            op_type = Parser.tokenizer.next.type
+            value = Parser.parseTerm()
 
-            if Parser.tokenizer.next.type == "PLUS":
+            if op_type == "MINUS":
+                total -= value
+            else:
+                total += value
+
+            #Parser.tokenizer.selectNext()
+
+        return total
+
+    @ staticmethod
+    def parseTerm():
+        if Parser.tokenizer.next.type != "INT":
+            Parser.tokenizer.selectNext()
+
+        total = Parser.tokenizer.next.value
+        Parser.tokenizer.selectNext()
+        op_type = Parser.tokenizer.next.type
+
+        while op_type in Parser.term:
+            if op_type == "MULT":
                 Parser.tokenizer.selectNext()
-                total += Parser.tokenizer.next.value
-            elif Parser.tokenizer.next.type == "MINUS":
+                total *= Parser.tokenizer.next.value
+            elif op_type == "DIV":
                 Parser.tokenizer.selectNext()
-                total -= Parser.tokenizer.next.value
+                total //= Parser.tokenizer.next.value
+
+            Parser.tokenizer.selectNext()
+            op_type = Parser.tokenizer.next.type
 
         return total
 
