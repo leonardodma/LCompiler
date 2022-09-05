@@ -17,35 +17,17 @@ class Tokenizer():
     def __init__(self, source: str):
         self.source = PrePro.filter(source)
         self.position = 0
-        self.operations = {"+": "PLUS", "-": "MINUS", "*": "MULT", "/": "DIV"}
+        self.operations = {"+": "PLUS", "-": "MINUS",
+                           "*": "MULT", "/": "DIV",
+                           "(": "OPEN", ')': "CLOSE"}
 
-        self.fistToken()
-
-    def fistToken(self):
-        value = ""
-        for token in self.source:
-            if value == "" and (token in self.operations.keys() or token == " "):
-                raise ValueError(
-                    "Invalid sintax: your input should not start with an operation or empty string.")
-            elif value != "" and (token in self.operations.keys() or token == " "):
-                self.next = Token("INT", int(value))
-                break
-            elif self.position + 1 >= len(self.source):
-                value += token
-                self.position += 1
-                self.next = Token("INT", int(value))
-                break
-            elif token.isdigit():
-                value += token
-            else:
-                raise ValueError(f"Invalid sintax: invalid token '{token}'")
-
-            self.position += 1
+        self.selectNext()
 
     def selectNext(self):
         source = self.source[self.position:]
+
         if self.position >= len(self.source) or source.replace(" ", "") == "":
-            if self.next.value in self.operations.keys():
+            if self.next.value in self.operations.keys() and self.next.value != ")":
                 raise ValueError(
                     "Invalid sintax: string must not end with an operation")
             self.next = Token("EOP", None)
@@ -77,9 +59,6 @@ class Tokenizer():
                     break
 
                 elif value == "" and token in self.operations.keys():
-                    if self.next.type != "INT":
-                        raise ValueError(
-                            f"Invalid Sintax: two operators in a row")
                     self.next = Token(self.operations[token], token)
                     self.position += 1
                     break
@@ -92,50 +71,73 @@ class Tokenizer():
 
 class Parser():
     tokenizer = None
-    term = ["MULT", "DIV"]
     expression = ["PLUS", "MINUS"]
+    term = ["MULT", "DIV"]
+    factor = ["OPEN", "CLOSE"]
 
     @ staticmethod
     def parseExpression():
-        total = 0
-        while Parser.tokenizer.next.type != "EOP":
+        total = Parser.parseTerm()
+
+        while Parser.tokenizer.next.type in Parser.expression:
             op_type = Parser.tokenizer.next.type
+            Parser.tokenizer.selectNext()
             value = Parser.parseTerm()
 
-            if op_type == "MINUS":
+            if op_type == "PLUS":
+                total += value
+            elif op_type == "MINUS":
                 total -= value
-            else:
-                if op_type != "EOP":
-                    total += value
-
-            # Parser.tokenizer.selectNext()
 
         return total
 
     @ staticmethod
     def parseTerm():
-        if Parser.tokenizer.next.type != "INT":
-            Parser.tokenizer.selectNext()
+        total = Parser.parseFactor()
 
-        total = Parser.tokenizer.next.value
-        Parser.tokenizer.selectNext()
-        op_type = Parser.tokenizer.next.type
-
-        while op_type in Parser.term:
-            if op_type == "MULT":
-                Parser.tokenizer.selectNext()
-                total *= Parser.tokenizer.next.value
-            elif op_type == "DIV":
-                Parser.tokenizer.selectNext()
-                total //= Parser.tokenizer.next.value
-
-            Parser.tokenizer.selectNext()
+        while Parser.tokenizer.next.type in Parser.term:
             op_type = Parser.tokenizer.next.type
+            Parser.tokenizer.selectNext()
+            value = Parser.parseFactor()
+
+            if op_type == "MULT":
+                total *= value
+            elif op_type == "DIV":
+                total //= value
 
         return total
 
     @ staticmethod
+    def parseFactor():
+        if Parser.tokenizer.next.type == "INT":
+            value = Parser.tokenizer.next.value
+            Parser.tokenizer.selectNext()
+            return value
+        elif Parser.tokenizer.next.type in Parser.expression:
+            if Parser.tokenizer.next.type == "PLUS":
+                Parser.tokenizer.selectNext()
+                return Parser.parseFactor()
+            elif Parser.tokenizer.next.type == "MINUS":
+                Parser.tokenizer.selectNext()
+                return -Parser.parseFactor()
+        elif Parser.tokenizer.next.type == "OPEN":
+            Parser.tokenizer.selectNext()
+            value = Parser.parseExpression()
+            if Parser.tokenizer.next.type != "CLOSE":
+                raise ValueError("Invalid sintax: missing ')'")
+            Parser.tokenizer.selectNext()
+            return value
+
+        else:
+            raise ValueError(
+                f"Invalid sintax: invalid token '{Parser.tokenizer.next.value}'")
+
+    @ staticmethod
     def run(code):
         Parser.tokenizer = Tokenizer(code)
+        value = Parser.parseExpression()
 
-        return Parser.parseExpression()
+        if Parser.tokenizer.next.type != "EOP":
+            raise ValueError("Invalid sintax")
+
+        return value
