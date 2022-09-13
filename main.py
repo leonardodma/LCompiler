@@ -1,9 +1,13 @@
+from fileinput import filename
 import sys
 from parser import *
 
 
 def main(argv, arc):
-    print(Parser.run(argv[1]).evaluate())
+    filename = argv[1]
+    with open(filename, "r") as file:
+        source = file.read()
+        print(Parser.run(source).evaluate())
 
 
 if __name__ == '__main__':
