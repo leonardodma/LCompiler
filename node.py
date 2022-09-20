@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from symbol_table import SymbolTable
 
 
 class Node(ABC):
@@ -9,6 +10,39 @@ class Node(ABC):
     @abstractmethod
     def evaluate(self):
         pass
+
+
+class Block(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        for child in self.children:
+            child.evaluate()
+
+
+class Assignment(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        SymbolTable.set(self.children[0].value, self.children[1].evaluate())
+
+
+class Print(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        print(self.value.evaluate())
+
+
+class Identifier(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        return SymbolTable.get(self.value)
 
 
 class BinOp(Node):

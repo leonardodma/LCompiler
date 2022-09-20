@@ -1,3 +1,6 @@
+import re
+
+
 class Token():
     def __init__(self, type: str, value):
         self.type = type
@@ -5,18 +8,25 @@ class Token():
 
 
 class PrePro():
+
     @staticmethod
     def filter(source: str):
-        return source.split("//")[0]
+        source = re.sub('\s+', ' ', source)
+        return source.replace("\n", "")
 
 
 class Tokenizer():
     def __init__(self, source: str):
         self.source = PrePro.filter(source)
         self.position = 0
-        self.operations = {"+": "PLUS", "-": "MINUS",
-                           "*": "MULT", "/": "DIV",
-                           "(": "OPEN", ')': "CLOSE"}
+        self.operations = {
+            "+": "PLUS", "-": "MINUS",
+            "*": "MULT", "/": "DIV",
+            "(": "OPEN_PARENTHESES", ')': "CLOSE_PARENTHESES",
+            "{": "OPEN_BRACKTS", "}": "CLOSE_BRACKTS",
+            "=": "ASSIGNMENT",
+            ";": "SEMICOLON",
+        }
 
         self.selectNext()
 
@@ -24,7 +34,7 @@ class Tokenizer():
         source = self.source[self.position:]
 
         if self.position >= len(self.source) or source.replace(" ", "") == "":
-            if self.next.value in self.operations.keys() and self.next.value != ")":
+            if self.next.value in self.operations.keys() and self.next.value != "}":
                 raise ValueError(
                     "Invalid sintax: string must not end with an operation")
             self.next = Token("EOP", None)
@@ -39,20 +49,32 @@ class Tokenizer():
                     if i + 1 >= len(source) and value.isdigit():
                         self.next = Token("INT", int(value))
                         break
+                    elif i + 1 >= len(source) and value.isalpha():
+                        self.next = Token("IDENTIFIER", value)
+                        break
 
-                elif token.isdigit():
+                elif token.isdigit() or token.isalpha():
                     value += token
                     self.position += 1
 
                     if space and self.next.value not in self.operations.keys():
                         raise ValueError(
-                            f"Invalid sintax: no operations between numbers")
+                            f"Invalid sintax: no operator between values")
                     elif i + 1 >= len(source):
-                        self.next = Token("INT", int(value))
+                        if value.isdigit():
+                            self.next = Token("INT", int(value))
+                        elif value.isalpha():
+                            self.next = Token("IDENTIFIER", value)
                         break
 
                 elif value != "" and (token in self.operations.keys() or token == " "):
-                    self.next = Token("INT", int(value))
+                    if value.isdigit():
+                        self.next = Token("INT", int(value))
+                    elif value.isalpha():
+                        if value == "Print":
+                            self.next = Token("PRINT", value)
+                        else:
+                            self.next = Token("IDENTIFIER", value)
                     break
 
                 elif value == "" and token in self.operations.keys():
