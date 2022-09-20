@@ -2,8 +2,10 @@ from tokenizer import Tokenizer
 
 a = Tokenizer("""
 {
-Print(40+-+-2);
-Print(40+--2);
+// Code
+x_1 = 3;
+y_2_ = 4;
+Print(x1+y_2_+1);
 }
 """)
 

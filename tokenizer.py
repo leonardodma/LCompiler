@@ -54,7 +54,7 @@ class Tokenizer():
                         self.next = Token("IDENTIFIER", value)
                         break
 
-                elif token.isdigit() or token.isalpha():
+                elif token.isdigit() or token.isalpha() or token == "_":
                     value += token
                     self.position += 1
 
@@ -69,9 +69,10 @@ class Tokenizer():
                         break
 
                 elif value != "" and (token in self.operations.keys() or token == " "):
-                    if value.isdigit():
-                        self.next = Token("INT", int(value))
-                    elif value.isalpha():
+                    try:
+                        value = int(value)
+                        self.next = Token("INT", value)
+                    except ValueError:
                         if value == "Print":
                             self.next = Token("PRINT", value)
                         else:
