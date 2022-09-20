@@ -11,6 +11,7 @@ class PrePro():
 
     @staticmethod
     def filter(source: str):
+        source = re.sub(re.compile("//.*?\n"), "", source)
         source = re.sub('\s+', ' ', source)
         return source.replace("\n", "")
 
