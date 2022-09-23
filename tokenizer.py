@@ -1,30 +1,34 @@
+from curses.ascii import isdigit
 import re
 
 
-class Token():
+class Token:
     def __init__(self, type: str, value):
         self.type = type
         self.value = value
 
 
-class PrePro():
-
+class PrePro:
     @staticmethod
     def filter(source: str):
         source = re.sub(re.compile("//.*?\n"), "", source)
-        source = re.sub('\s+', ' ', source)
+        source = re.sub("\s+", " ", source)
         return source.replace("\n", "")
 
 
-class Tokenizer():
+class Tokenizer:
     def __init__(self, source: str):
         self.source = PrePro.filter(source)
         self.position = 0
         self.operations = {
-            "+": "PLUS", "-": "MINUS",
-            "*": "MULT", "/": "DIV",
-            "(": "OPEN_PARENTHESES", ')': "CLOSE_PARENTHESES",
-            "{": "OPEN_BRACKTS", "}": "CLOSE_BRACKTS",
+            "+": "PLUS",
+            "-": "MINUS",
+            "*": "MULT",
+            "/": "DIV",
+            "(": "OPEN_PARENTHESES",
+            ")": "CLOSE_PARENTHESES",
+            "{": "OPEN_BRACKTS",
+            "}": "CLOSE_BRACKTS",
             "=": "ASSIGNMENT",
             ";": "SEMICOLON",
         }
@@ -32,12 +36,13 @@ class Tokenizer():
         self.selectNext()
 
     def selectNext(self):
-        source = self.source[self.position:]
+        source = self.source[self.position :]
 
         if self.position >= len(self.source) or source.replace(" ", "") == "":
             if self.next.value in self.operations.keys() and self.next.value != "}":
                 raise ValueError(
-                    "Invalid sintax: string must not end with an operation")
+                    "Invalid sintax: string must not end with an operation"
+                )
             self.next = Token("EOP", None)
         else:
             space = False
@@ -55,12 +60,16 @@ class Tokenizer():
                         break
 
                 elif token.isdigit() or token.isalpha() or token == "_":
+                    if value.isdigit() and not token.isdigit():
+                        raise ValueError(
+                            "Invalid sintax: variables must not start with a number"
+                        )
+
                     value += token
                     self.position += 1
 
                     if space and self.next.value not in self.operations.keys():
-                        raise ValueError(
-                            f"Invalid sintax: no operator between values")
+                        raise ValueError(f"Invalid sintax: no operator between values")
                     elif i + 1 >= len(source):
                         if value.isdigit():
                             self.next = Token("INT", int(value))
@@ -84,7 +93,6 @@ class Tokenizer():
                     self.position += 1
                     break
                 else:
-                    raise ValueError(
-                        f"Invalid sintax: invalid token '{token}'")
+                    raise ValueError(f"Invalid sintax: invalid token '{token}'")
 
                 i += 1
