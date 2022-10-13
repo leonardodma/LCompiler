@@ -2,10 +2,9 @@ from tokenizer import Tokenizer
 
 a = Tokenizer("""
 {
-    a = 1;
-    while (a  == 1)
-    {
-        Print(a);
+    x = 1;
+    if ((x==2) || (x<2)) {
+        Print(1);
     }
 }
 """)

@@ -1,8 +1,13 @@
+
 {
     a = 0;
-    while (a < 10){
+    b = 1;
+    while ((a < 99999) && (b  ==1)){
+        a = a +1;
         Print(a);
-        a = a + 1;
+        if (a == 5){
+            b = 0;
+        }
     }
-    Print(a);   
+    Print(a);
 }

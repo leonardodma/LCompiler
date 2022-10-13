@@ -32,7 +32,10 @@ class Parser():
 
     @ staticmethod
     def parseStatement():
-        if Parser.tokenizer.next.type in Parser.statment_semicolon:
+        if Parser.tokenizer.next.type == "SEMICOLON":
+            Parser.tokenizer.selectNext()
+            return NoOp("", [])
+        elif Parser.tokenizer.next.type in Parser.statment_semicolon:
             if Parser.tokenizer.next.type == "IDENTIFIER":
                 identifier = Identifier(Parser.tokenizer.next.value, [])
                 Parser.tokenizer.selectNext()
@@ -158,15 +161,16 @@ class Parser():
             value = Identifier(Parser.tokenizer.next.value, [])
             Parser.tokenizer.selectNext()
             return value
-        elif Parser.tokenizer.next.type in Parser.term:
+        elif Parser.tokenizer.next.type in Parser.factor:
             op = Parser.tokenizer.next.value
             Parser.tokenizer.selectNext()
             return UnOp(op, [Parser.parseFactor()])
         elif Parser.tokenizer.next.type == "OPEN_PARENTHESES":
             Parser.tokenizer.selectNext()
-            value = Parser.parseExpression()
+            value = Parser.parseRelationExpression()
             if Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
                 raise ValueError("Invalid sintax: missing ')'")
+
             Parser.tokenizer.selectNext()
             return value
         elif Parser.tokenizer.next.type == "READ":

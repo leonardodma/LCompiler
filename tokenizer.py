@@ -41,6 +41,14 @@ class Tokenizer:
             "&": "AND",
         }
 
+        self.reserved_words = {
+            "if": "IF",
+            "else": "ELSE",
+            "while": "WHILE",
+            "Print": "PRINT",
+            "Read": "READ",
+        }
+
         self.selectNext()
 
     def selectNext(self):
@@ -53,9 +61,36 @@ class Tokenizer:
             value = ""
             i = 0
             for token in source:
-                if token == " ":
-                    space = True
-                    self.position += 1
+                if token == " " or token in self.operations.keys():
+                    if value != "":
+                        try:
+                            value = int(value)
+                            self.next = Token("INT", value)
+                        except:
+                            if value in self.reserved_words.keys():
+                                self.next = Token(self.reserved_words[value], value)
+                            else:
+                                self.next = Token("IDENTIFIER", value)
+                        break
+
+                    elif value == "" and token != " ":
+                        if token == "=" and source[i + 1] == "=":
+                            self.next = Token("EQUAL", "==")
+                            self.position += 2
+                        elif token == "&" and source[i + 1] == "&":
+                            self.next = Token(self.operations["&"], "&&")
+                            self.position += 2
+                        elif token == "|" and source[i + 1] == "|":
+                            self.next = Token(self.operations["|"], "||")
+                            self.position += 2
+                        else:
+                            self.next = Token(self.operations[token], token)
+                            self.position += 1
+                        break
+
+                    else:
+                        space = True
+                        self.position += 1
 
                 elif token.isdigit() or token.isalpha() or token == "_":
                     if value.isdigit() and not token.isdigit():
@@ -66,51 +101,6 @@ class Tokenizer:
                     value += token
                     self.position += 1
 
-                    if space and self.next.value not in self.operations.keys():
-                        print("valor", self.next.value)
-                        raise ValueError(
-                            f"Invalid sintax: no operator between values")
-                    elif i + 1 >= len(source):
-                        if value.isdigit():
-                            self.next = Token("INT", int(value))
-                        elif value.isalpha():
-                            self.next = Token("IDENTIFIER", value)
-                        break
-
-                elif value != "" and (token in self.operations.keys() or token == " "):
-                    try:
-                        value = int(value)
-                        self.next = Token("INT", value)
-                    except ValueError:
-                        if value == "Print":
-                            self.next = Token("PRINT", value)
-                        elif value == "Read":
-                            self.next = Token("READ", value)
-                        elif value == "if":
-                            self.next = Token("IF", value)
-                        elif value == "else":
-                            self.next = Token("ELSE", value)
-                        elif value == "while":
-                            self.next = Token("WHILE", value)
-                        else:
-                            self.next = Token("IDENTIFIER", value)
-                    break
-
-                elif value == "" and token in self.operations.keys():
-                    if token == "=" and source[i + 1] == "=":
-                        self.next = Token("EQUAL", "==")
-                        self.position += 2
-                    elif token == "&" and source[i + 1] == "&":
-                        self.next = Token(self.operations["&"], "&&")
-                        self.position += 2
-                    elif token == "|" and source[i + 1] == "|":
-                        self.next = Token(self.operations["|"], "||")
-                        self.position += 2
-                    else:
-                        self.next = Token(self.operations[token], token)
-                        self.position += 1
-
-                    break
                 else:
                     raise ValueError(
                         f"Invalid sintax: invalid token '{token}'")
