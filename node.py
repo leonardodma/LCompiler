@@ -37,6 +37,39 @@ class Print(Node):
         print(self.value.evaluate())
 
 
+class If(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        if len(self.children) == 3:
+            if self.children[0].evaluate():
+                self.children[1].evaluate()
+            else:
+                self.children[2].evaluate()
+        else:
+            if self.children[0].evaluate():
+                self.children[1].evaluate()
+
+
+class While(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        while self.children[0].evaluate():
+            self.children[1].evaluate()
+
+
+class Read(Node):
+    def __init__(self, value, children):
+        super().__init__(value, children)
+
+    def evaluate(self):
+        x = input()
+        return int(x)
+
+
 class Identifier(Node):
     def __init__(self, value, children):
         super().__init__(value, children)
@@ -58,6 +91,16 @@ class BinOp(Node):
             return self.children[0].evaluate() * self.children[1].evaluate()
         elif self.value == "/":
             return self.children[0].evaluate() // self.children[1].evaluate()
+        elif self.value == "==":
+            return self.children[0].evaluate() == self.children[1].evaluate()
+        elif self.value == "&&":
+            return self.children[0].evaluate() and self.children[1].evaluate()
+        elif self.value == "||":
+            return self.children[0].evaluate() or self.children[1].evaluate()
+        elif self.value == ">":
+            return self.children[0].evaluate() > self.children[1].evaluate()
+        elif self.value == "<":
+            return self.children[0].evaluate() < self.children[1].evaluate()
 
 
 class UnOp(Node):
@@ -69,6 +112,8 @@ class UnOp(Node):
             return self.children[0].evaluate()
         elif self.value == "-":
             return -self.children[0].evaluate()
+        elif self.value == "!":
+            return not self.children[0].evaluate()
 
 
 class IntVal(Node):

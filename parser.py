@@ -4,11 +4,13 @@ from node import *
 
 class Parser():
     tokenizer = None
-    statment = ["PRINT", "IDENTIFIER"]
-    blok = ["OPEN_BRACKTS", "CLOSE_BRACKTS"]
-    expression = ["PLUS", "MINUS"]
-    term = ["MULT", "DIV"]
-    factor = ["OPEN_PARENTHESES", "CLOSE_PARENTHESES"]
+    statment_semicolon = ["PRINT", "IDENTIFIER"]
+    statment_brackets = ["IF", "WHILE"]
+
+    relationExpression = ["EQUAL", "GREATER", "LESS"]
+    expression = ["PLUS", "MINUS", "OR"]
+    term = ["MULT", "DIV", "AND"]
+    factor = ["PLUS", "MINUS", "NOT"]
 
     @ staticmethod
     def parseBlock():
@@ -21,17 +23,16 @@ class Parser():
         while Parser.tokenizer.next.type != "CLOSE_BRACKTS":
             if Parser.tokenizer.next.type == "EOP":
                 raise ValueError("Invalid sintax: block must end with '}'")
-            nodes.append(Parser.parseStatement())
+            node = Parser.parseStatement()
+            nodes.append(node)
 
         Parser.tokenizer.selectNext()
-        if Parser.tokenizer.next.type != "EOP":
-            raise ValueError("Invalid sintax: block must end with '}'")
 
-        Block("", nodes).evaluate()
+        return Block("block", nodes)
 
     @ staticmethod
     def parseStatement():
-        if Parser.tokenizer.next.type in Parser.statment:
+        if Parser.tokenizer.next.type in Parser.statment_semicolon:
             if Parser.tokenizer.next.type == "IDENTIFIER":
                 identifier = Identifier(Parser.tokenizer.next.value, [])
                 Parser.tokenizer.selectNext()
@@ -66,16 +67,62 @@ class Parser():
             Parser.tokenizer.selectNext()
             return value
 
+        elif Parser.tokenizer.next.type in Parser.statment_brackets:
+            if Parser.tokenizer.next.type == "IF":
+                Parser.tokenizer.selectNext()
+
+                if Parser.tokenizer.next.type != "OPEN_PARENTHESES":
+                    raise ValueError("Invalid sintax: if must have '('")
+
+                Parser.tokenizer.selectNext()
+                condition = Parser.parseRelationExpression()
+
+                if Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
+                    raise ValueError("Invalid sintax: if must have ')'")
+
+                Parser.tokenizer.selectNext()
+                if_statement = Parser.parseStatement()
+
+                if Parser.tokenizer.next.type == "ELSE":
+                    Parser.tokenizer.selectNext()
+                    else_statement = Parser.parseStatement()
+                    return If("IF", [condition, if_statement, else_statement])
+
+                return If("IF", [condition, if_statement])
+
+            elif Parser.tokenizer.next.type == "WHILE":
+                Parser.tokenizer.selectNext()
+
+                if Parser.tokenizer.next.type != "OPEN_PARENTHESES":
+                    raise ValueError("Invalid sintax: while must have '('")
+
+                Parser.tokenizer.selectNext()
+                condition = Parser.parseRelationExpression()
+
+                if Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
+                    raise ValueError("Invalid sintax: while must have ')'")
+
+                Parser.tokenizer.selectNext()
+
+                return While("WHILE", [condition, Parser.parseStatement()])
+
         elif Parser.tokenizer.next.type == "INT":
             raise ValueError("Invalid sintax: int must not be assigned")
 
         else:
-            if Parser.tokenizer.next.type != "SEMICOLON":
-                print("Entrou")
-                raise ValueError("Invalid sintax: no atribuition were made")
+            return Parser.parseBlock()
 
+    @ staticmethod
+    def parseRelationExpression():
+        result = Parser.parseExpression()
+
+        while Parser.tokenizer.next.type in Parser.relationExpression:
+            op_type = Parser.tokenizer.next.value
             Parser.tokenizer.selectNext()
-            return NoOp("NoOp", [])
+            value = Parser.parseExpression()
+            result = BinOp(op_type, [result, value])
+
+        return result
 
     @ staticmethod
     def parseExpression():
@@ -111,17 +158,31 @@ class Parser():
             value = Identifier(Parser.tokenizer.next.value, [])
             Parser.tokenizer.selectNext()
             return value
-        elif Parser.tokenizer.next.type in Parser.expression:
+        elif Parser.tokenizer.next.type in Parser.term:
             op = Parser.tokenizer.next.value
             Parser.tokenizer.selectNext()
             return UnOp(op, [Parser.parseFactor()])
-        elif Parser.tokenizer.next.type == "OPEN":
+        elif Parser.tokenizer.next.type == "OPEN_PARENTHESES":
             Parser.tokenizer.selectNext()
             value = Parser.parseExpression()
-            if Parser.tokenizer.next.type != "CLOSE":
+            if Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
                 raise ValueError("Invalid sintax: missing ')'")
             Parser.tokenizer.selectNext()
             return value
+        elif Parser.tokenizer.next.type == "READ":
+            Parser.tokenizer.selectNext()
+
+            if Parser.tokenizer.next.type != "OPEN_PARENTHESES":
+                raise ValueError("Invalid sintax: read must have '('")
+
+            Parser.tokenizer.selectNext()
+            result = Read("READ", [])
+
+            if Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
+                raise ValueError("Invalid sintax: read must have ')'")
+            Parser.tokenizer.selectNext()
+
+            return result
         else:
             raise ValueError(
                 f"Invalid sintax: invalid token '{Parser.tokenizer.next.value}'")
@@ -129,4 +190,8 @@ class Parser():
     @ staticmethod
     def run(code):
         Parser.tokenizer = Tokenizer(code)
-        Parser.parseBlock()
+        blocks = Parser.parseBlock()
+        if Parser.tokenizer.next.type != "EOP":
+            raise ValueError("Invalid sintax: block must end with '}'")
+
+        blocks.evaluate()

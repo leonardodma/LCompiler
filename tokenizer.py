@@ -1,4 +1,3 @@
-from curses.ascii import isdigit
 import re
 
 
@@ -20,6 +19,7 @@ class Tokenizer:
     def __init__(self, source: str):
         self.source = PrePro.filter(source)
         self.position = 0
+
         self.operations = {
             "+": "PLUS",
             "-": "MINUS",
@@ -30,19 +30,23 @@ class Tokenizer:
             "{": "OPEN_BRACKTS",
             "}": "CLOSE_BRACKTS",
             "=": "ASSIGNMENT",
+            "==": "EQUAL",
             ";": "SEMICOLON",
+            "!": "NOT",
+            ">": "GREATER",
+            "<": "LESS",
+            "|": "OR",
+            "||": "OR",
+            "&&": "AND",
+            "&": "AND",
         }
 
         self.selectNext()
 
     def selectNext(self):
-        source = self.source[self.position :]
+        source = self.source[self.position:]
 
         if self.position >= len(self.source) or source.replace(" ", "") == "":
-            if self.next.value in self.operations.keys() and self.next.value != "}":
-                raise ValueError(
-                    "Invalid sintax: string must not end with an operation"
-                )
             self.next = Token("EOP", None)
         else:
             space = False
@@ -52,12 +56,6 @@ class Tokenizer:
                 if token == " ":
                     space = True
                     self.position += 1
-                    if i + 1 >= len(source) and value.isdigit():
-                        self.next = Token("INT", int(value))
-                        break
-                    elif i + 1 >= len(source) and value.isalpha():
-                        self.next = Token("IDENTIFIER", value)
-                        break
 
                 elif token.isdigit() or token.isalpha() or token == "_":
                     if value.isdigit() and not token.isdigit():
@@ -69,7 +67,9 @@ class Tokenizer:
                     self.position += 1
 
                     if space and self.next.value not in self.operations.keys():
-                        raise ValueError(f"Invalid sintax: no operator between values")
+                        print("valor", self.next.value)
+                        raise ValueError(
+                            f"Invalid sintax: no operator between values")
                     elif i + 1 >= len(source):
                         if value.isdigit():
                             self.next = Token("INT", int(value))
@@ -84,15 +84,35 @@ class Tokenizer:
                     except ValueError:
                         if value == "Print":
                             self.next = Token("PRINT", value)
+                        elif value == "Read":
+                            self.next = Token("READ", value)
+                        elif value == "if":
+                            self.next = Token("IF", value)
+                        elif value == "else":
+                            self.next = Token("ELSE", value)
+                        elif value == "while":
+                            self.next = Token("WHILE", value)
                         else:
                             self.next = Token("IDENTIFIER", value)
                     break
 
                 elif value == "" and token in self.operations.keys():
-                    self.next = Token(self.operations[token], token)
-                    self.position += 1
+                    if token == "=" and source[i + 1] == "=":
+                        self.next = Token("EQUAL", "==")
+                        self.position += 2
+                    elif token == "&" and source[i + 1] == "&":
+                        self.next = Token(self.operations["&"], "&&")
+                        self.position += 2
+                    elif token == "|" and source[i + 1] == "|":
+                        self.next = Token(self.operations["|"], "||")
+                        self.position += 2
+                    else:
+                        self.next = Token(self.operations[token], token)
+                        self.position += 1
+
                     break
                 else:
-                    raise ValueError(f"Invalid sintax: invalid token '{token}'")
+                    raise ValueError(
+                        f"Invalid sintax: invalid token '{token}'")
 
                 i += 1

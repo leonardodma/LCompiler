@@ -2,10 +2,11 @@ from tokenizer import Tokenizer
 
 a = Tokenizer("""
 {
-// Code
-_= 3;
-y_2_ = 4;
-Print(x1+y_2_+1);
+    a = 1;
+    while (a  == 1)
+    {
+        Print(a);
+    }
 }
 """)
 
