@@ -1,3 +1,5 @@
+from curses.ascii import isdigit
+from operator import length_hint
 import re
 
 
@@ -39,6 +41,10 @@ class Tokenizer:
             "||": "OR",
             "&&": "AND",
             "&": "AND",
+            ".": "DOT",
+            ":": "COLON",
+            '"': "STRING",
+            ",": "COMMA",
         }
 
         self.reserved_words = {
@@ -47,17 +53,19 @@ class Tokenizer:
             "while": "WHILE",
             "Print": "PRINT",
             "Read": "READ",
+            "var": "VAR",
+            "i32": "INT_TYPE",
+            "String": "STRING_TYPE",
         }
 
         self.selectNext()
 
     def selectNext(self):
-        source = self.source[self.position:]
+        source = self.source[self.position :]
 
         if self.position >= len(self.source) or source.replace(" ", "") == "":
             self.next = Token("EOP", None)
         else:
-            space = False
             value = ""
             i = 0
             for token in source:
@@ -83,13 +91,28 @@ class Tokenizer:
                         elif token == "|" and source[i + 1] == "|":
                             self.next = Token(self.operations["|"], "||")
                             self.position += 2
+                        elif token == '"':
+                            self.position += 1
+                            string_value = ""
+                            new_source = self.source[self.position :]
+
+                            for char in new_source:
+                                if char != '"':
+                                    string_value += char
+                                    self.position += 1
+                                    if self.position >= len(self.source):
+                                        raise Exception("String not closed")
+                                else:
+                                    self.next = Token("STRING", string_value)
+                                    self.position += 1
+                                    break
                         else:
                             self.next = Token(self.operations[token], token)
                             self.position += 1
+
                         break
 
                     else:
-                        space = True
                         self.position += 1
 
                 elif token.isdigit() or token.isalpha() or token == "_":
@@ -102,7 +125,6 @@ class Tokenizer:
                     self.position += 1
 
                 else:
-                    raise ValueError(
-                        f"Invalid sintax: invalid token '{token}'")
+                    raise ValueError(f"Invalid sintax: invalid token '{token}'")
 
                 i += 1

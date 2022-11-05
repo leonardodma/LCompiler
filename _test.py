@@ -1,13 +1,23 @@
 from tokenizer import Tokenizer
 
-a = Tokenizer("""
+a = Tokenizer(
+    """
 {
-    x = 1;
-    if ((x==2) || (x<2)) {
-        Print(1);
+    var a : i32;
+    var b : String;
+    a = 1;
+    b = "Hello";
+
+    if (a < 10)
+    {
+        Print("entrou");
     }
+
+    
+    Print("saiu");
 }
-""")
+"""
+)
 
 while a.next.type != "EOP":
     print(a.next.type, "-", a.next.value)
