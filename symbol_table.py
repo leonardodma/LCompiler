@@ -3,8 +3,8 @@ class SymbolTable:
 
     @staticmethod
     def set(key, value):
-        if key[0] not in SymbolTable.table.keys():
-            raise ValueError(f"Variable {key[0]} type was not declared to be assigned")
+        if key not in SymbolTable.table.keys():
+            raise ValueError(f"Variable {key} type was not declared to be assigned")
 
         var_identifier, var_type = SymbolTable.table[key]
 
