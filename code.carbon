@@ -1,16 +1,22 @@
 {
-  // All str operations 
-  var a, b : String;
-  var x_1, y, z : i32;
-  x_1 = 1; y = 1; z = 2;
-  a = "abc";
-  b = "def";
-  Print(a.b);
-  Print(a.x_1);
-  Print(x_1.a);
-  Print(y.z);
-  Print(a.(x_1==1));
-  Print(a == a);
-  Print(a < b);
-  Print(a > b);
-}
+    // v2.2 testing
+    var x_1: i32;
+    
+    x_1 = Read();
+    if ((x_1 > 1) && !(x_1 < 1)) {
+        x_1 = 3;
+    }
+    else {
+        {
+        x_1 = (-20+30)*4*3/40;;;;; // teste de comentario
+        }
+    }
+    Print(x_1);
+    x_1 = Read();
+    if ((x_1 > 1) && !(x_1 < 1))
+        x_1 = 3;
+    else
+        x_1 = (-20+30)*12/40;;;;;
+
+    Print(x_1);
+    while ((x_1 > 1) || (x_1 == 1)) {x_1 = x_1 - 1;Print(x_1);}}
