@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from symbol_table import SymbolTable
 
+int_operations = ["+", "-", "*", "/", "||", "&&"]
+
 
 class Node(ABC):
     def __init__(self, value, children):
@@ -95,32 +97,32 @@ class BinOp(Node):
             left = self.children[0].evaluate()
             right = self.children[1].evaluate()
 
-            if left[1] == "i32" and right[1] == "i32":
-                if self.value == "+":
-                    value = left[0] + right[0]
-                elif self.value == "-":
-                    value = left[0] - right[0]
-                elif self.value == "*":
-                    value = left[0] * right[0]
-                elif self.value == "/":
-                    value = left[0] // right[0]
-                elif self.value == "==":
-                    value = left[0] == right[0]
-                elif self.value == "&&":
-                    value = left[0] and right[0]
-                elif self.value == "||":
-                    value = left[0] or right[0]
-                elif self.value == ">":
-                    value = left[0] > right[0]
-                elif self.value == "<":
-                    value = left[0] < right[0]
+            if self.value in int_operations and (left[1] != "i32" or right[1] != "i32"):
+                raise ValueError(
+                    f"Cannot perform {self.value} between {left[0]} and {right[0]}"
+                )
 
-                return (int(value), "i32")
+            if self.value == "+":
+                value = left[0] + right[0]
+            elif self.value == "-":
+                value = left[0] - right[0]
+            elif self.value == "*":
+                value = left[0] * right[0]
+            elif self.value == "/":
+                value = left[0] // right[0]
+            elif self.value == "==":
+                value = left[0] == right[0]
+            elif self.value == "&&":
+                value = left[0] and right[0]
+            elif self.value == "||":
+                value = left[0] or right[0]
+            elif self.value == ">":
+                value = left[0] > right[0]
+            elif self.value == "<":
+                value = left[0] < right[0]
 
-            else:
-                if self.value == "==":
-                    return (int(False), "i32")
-                raise ValueError("Cannot perform operation on non-integer values")
+            return (int(value), "i32")
+
         else:
             string_concat = ""
             for child in self.children:
