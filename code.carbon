@@ -1,6 +1,7 @@
 {
-    var x1 : i32;
-    x1 = 3;
-    x1 = x1 +1;
-    Print(X1);
+  var x : String;
+  x = "a";
+  var y : i32;
+  y = 1;
+  Print(x==y);
 }

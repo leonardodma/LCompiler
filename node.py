@@ -118,6 +118,8 @@ class BinOp(Node):
                 return (int(value), "i32")
 
             else:
+                if self.value == "==":
+                    return (int(False), "i32")
                 raise ValueError("Cannot perform operation on non-integer values")
         else:
             string_concat = ""
