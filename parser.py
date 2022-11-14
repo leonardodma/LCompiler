@@ -1,5 +1,7 @@
 from tokenizer import *
 from node import *
+from assembler import CodeAssembler
+from asm_writer import AsmWriter
 
 
 class Parser:
@@ -11,6 +13,8 @@ class Parser:
     expression = ["PLUS", "MINUS", "OR"]
     term = ["MULT", "DIV", "AND"]
     factor = ["PLUS", "MINUS", "NOT"]
+
+    writer = AsmWriter("compilation/program.asm")
 
     @staticmethod
     def parseBlock():
@@ -242,8 +246,19 @@ class Parser:
     @staticmethod
     def run(code):
         Parser.tokenizer = Tokenizer(code)
+
+        # Write code initial template
+        Parser.writer.add(CodeAssembler.initialize())
+
+        # Get the blocks
         blocks = Parser.parseBlock()
         if Parser.tokenizer.next.type != "EOP":
             raise ValueError("Invalid sintax: block must end with '}'")
 
-        blocks.evaluate()
+        # Add the blocks to the code
+        Parser.writer.add(blocks.evaluate())
+
+        # Write the code end template
+        Parser.writer.add(CodeAssembler.end())
+        Parser.writer.write()
+        Parser.writer.close()

@@ -1,7 +1,8 @@
 class SymbolTable:
     table = {}
+    pointer = 4
 
-    @staticmethod
+    """ @staticmethod
     def set(key, value):
         if key not in SymbolTable.table.keys():
             raise ValueError(f"Variable {key} type was not declared to be assigned")
@@ -12,10 +13,12 @@ class SymbolTable:
             raise ValueError(f"Variable {key} type is {var_type} not {value[1]}")
 
         var_identifier = value[0]
-        SymbolTable.table[key] = (var_identifier, var_type)
+        SymbolTable.table[key] = (var_identifier, var_type) """
 
     @staticmethod
     def get(key):
+        if key not in SymbolTable.table.keys():
+            raise ValueError(f"Variable {key} was not declared")
         return SymbolTable.table[key]
 
     @staticmethod
@@ -24,6 +27,7 @@ class SymbolTable:
             raise ValueError(f"Variable {var_identifier} already declared")
 
         if var_type == "i32":
-            SymbolTable.table[var_identifier] = (0, var_type)
-        elif var_type == "String":
-            SymbolTable.table[var_identifier] = ("", var_type)
+            SymbolTable.table[var_identifier] = (SymbolTable.pointer, var_type)
+            SymbolTable.pointer += 4
+        """ elif var_type == "String":
+            SymbolTable.table[var_identifier] = ("", var_type) """

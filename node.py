@@ -1,10 +1,14 @@
 from abc import ABC, abstractmethod
 from symbol_table import SymbolTable
+from assembler import CodeAssembler
+
 
 int_operations = ["+", "-", "*", "/", "||", "&&"]
 
 
 class Node(ABC):
+    i = 0
+
     def __init__(self, value, children):
         self.value = value
         self.children = children
@@ -13,14 +17,22 @@ class Node(ABC):
     def evaluate(self):
         pass
 
+    def newId():
+        Node.i += 1
+        return Node.i
+
 
 class Block(Node):
     def __init__(self, value, children):
         super().__init__(value, children)
 
     def evaluate(self):
+        block = ""
         for child in self.children:
-            child.evaluate()
+            code = child.evaluate()
+            block += "\n\t" + code
+
+        return block
 
 
 class Assignment(Node):
@@ -28,7 +40,10 @@ class Assignment(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        SymbolTable.set(self.children[0].value, self.children[1].evaluate())
+        # SymbolTable.set(self.children[0].value, self.children[1].evaluate())
+        pointer = SymbolTable.get(self.children[0].value)[0]
+        child = self.children[1].evaluate()
+        return CodeAssembler.assigment(child, pointer)
 
 
 class VarDec(Node):
@@ -39,13 +54,16 @@ class VarDec(Node):
         for child in self.children:
             SymbolTable.create(child, self.value)
 
+        return CodeAssembler.varDec()
+
 
 class Print(Node):
     def __init__(self, value, children):
         super().__init__(value, children)
 
     def evaluate(self):
-        print(self.value.evaluate()[0])
+        # print(self.value.evaluate()[0])
+        return CodeAssembler.print(self.value.evaluate())
 
 
 class If(Node):
@@ -53,14 +71,18 @@ class If(Node):
         super().__init__(value, children)
 
     def evaluate(self):
+        self.id = Node.newId()
         if len(self.children) == 3:
-            if self.children[0].evaluate()[0]:
-                self.children[1].evaluate()
-            else:
-                self.children[2].evaluate()
+            return CodeAssembler.ifElseStatement(
+                self.id,
+                self.children[0].evaluate(),
+                self.children[1].evaluate(),
+                self.children[2].evaluate(),
+            )
         else:
-            if self.children[0].evaluate()[0]:
-                self.children[1].evaluate()
+            return CodeAssembler.ifStatement(
+                self.id, self.children[0].evaluate(), self.children[1].evaluate()
+            )
 
 
 class While(Node):
@@ -68,8 +90,14 @@ class While(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        while self.children[0].evaluate()[0]:
-            self.children[1].evaluate()
+        """while self.children[0].evaluate()[0]:
+        self.children[1].evaluate()"""
+
+        self.id = Node.newId()
+        condition = self.children[0].evaluate()
+        statement = self.children[1].evaluate()
+
+        return CodeAssembler.whileLoop(self.id, condition, statement)
 
 
 class Read(Node):
@@ -77,7 +105,7 @@ class Read(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        return (int(input()), "i32")
+        """return (int(input()), "i32")"""
 
 
 class Identifier(Node):
@@ -85,7 +113,10 @@ class Identifier(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        return SymbolTable.get(self.value)
+        """return SymbolTable.get(self.value)"""
+
+        pointer = SymbolTable.get(self.value)[0]
+        return CodeAssembler.identifier(pointer)
 
 
 class BinOp(Node):
@@ -93,42 +124,34 @@ class BinOp(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        if self.value != ".":
-            left = self.children[0].evaluate()
-            right = self.children[1].evaluate()
+        left = self.children[0].evaluate()
+        right = self.children[1].evaluate()
 
-            if self.value in int_operations and (left[1] != "i32" or right[1] != "i32"):
-                raise ValueError(
-                    f"Cannot perform {self.value} between {left[0]} and {right[0]}"
-                )
+        """ if self.value in int_operations and (left[1] != "i32" or right[1] != "i32"):
+            raise ValueError(
+                f"Cannot perform {self.value} between {left[0]} and {right[0]}"
+            )
 
-            if self.value == "+":
-                value = left[0] + right[0]
-            elif self.value == "-":
-                value = left[0] - right[0]
-            elif self.value == "*":
-                value = left[0] * right[0]
-            elif self.value == "/":
-                value = left[0] // right[0]
-            elif self.value == "==":
-                value = left[0] == right[0]
-            elif self.value == "&&":
-                value = left[0] and right[0]
-            elif self.value == "||":
-                value = left[0] or right[0]
-            elif self.value == ">":
-                value = left[0] > right[0]
-            elif self.value == "<":
-                value = left[0] < right[0]
+        if self.value == "+":
+            value = left[0] + right[0]
+        elif self.value == "-":
+            value = left[0] - right[0]
+        elif self.value == "*":
+            value = left[0] * right[0]
+        elif self.value == "/":
+            value = left[0] // right[0]
+        elif self.value == "==":
+            value = left[0] == right[0]
+        elif self.value == "&&":
+            value = left[0] and right[0]
+        elif self.value == "||":
+            value = left[0] or right[0]
+        elif self.value == ">":
+            value = left[0] > right[0]
+        elif self.value == "<":
+            value = left[0] < right[0] """
 
-            return (int(value), "i32")
-
-        else:
-            string_concat = ""
-            for child in self.children:
-                string_concat += str(child.evaluate()[0])
-
-            return (string_concat, "String")
+        return CodeAssembler.binOp(self.value, left, right)
 
 
 class UnOp(Node):
@@ -136,16 +159,16 @@ class UnOp(Node):
         super().__init__(value, children)
 
     def evaluate(self):
+        value = self.children[0].value
         child = self.children[0].evaluate()
-        if child[1] == "i32":
-            if self.value == "+":
-                return (child[0], child[1])
-            elif self.value == "-":
-                return (-child[0], child[1])
-            elif self.value == "!":
-                return (not child[0], child[1])
-        else:
-            raise ValueError("Cannot perform operation on non-integer values")
+
+        if type(value) != int and value not in ["+", "-", "!"]:
+            pointer = SymbolTable.get(value)[0]
+            return CodeAssembler.unOp(self.value, child, f"[EBP-{pointer}]")
+        elif type(value) == int:
+            return CodeAssembler.unOp(self.value, child, value)
+
+        return CodeAssembler.unOp(self.value, child, "EBX")
 
 
 class IntVal(Node):
@@ -153,7 +176,8 @@ class IntVal(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        return (self.value, "i32")
+        return CodeAssembler.intVal(self.value)
+        # return (self.value, "i32")
 
 
 class StringVal(Node):
@@ -161,7 +185,7 @@ class StringVal(Node):
         super().__init__(value, children)
 
     def evaluate(self):
-        return (self.value, "String")
+        """return (self.value, "String")"""
 
 
 class NoOp(Node):
