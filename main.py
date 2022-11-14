@@ -11,7 +11,7 @@ def main(argv, arc):
     # filename = "code/while.carbon"
     with open(filename, "r") as file:
         source = file.read()
-        Parser.run(source)
+        Parser.run(source, filename)
 
 
 if __name__ == "__main__":

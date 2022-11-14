@@ -14,8 +14,6 @@ class Parser:
     term = ["MULT", "DIV", "AND"]
     factor = ["PLUS", "MINUS", "NOT"]
 
-    writer = AsmWriter("compilation/program.asm")
-
     @staticmethod
     def parseBlock():
         if Parser.tokenizer.next.type != "OPEN_BRACKTS":
@@ -244,11 +242,12 @@ class Parser:
             )
 
     @staticmethod
-    def run(code):
+    def run(code, filename):
         Parser.tokenizer = Tokenizer(code)
 
         # Write code initial template
-        Parser.writer.add(CodeAssembler.initialize())
+        writer = AsmWriter(filename.split(".")[0] + ".asm")
+        writer.add(CodeAssembler.initialize())
 
         # Get the blocks
         blocks = Parser.parseBlock()
@@ -256,9 +255,9 @@ class Parser:
             raise ValueError("Invalid sintax: block must end with '}'")
 
         # Add the blocks to the code
-        Parser.writer.add(blocks.evaluate())
+        writer.add(blocks.evaluate())
 
         # Write the code end template
-        Parser.writer.add(CodeAssembler.end())
-        Parser.writer.write()
-        Parser.writer.close()
+        writer.add(CodeAssembler.end())
+        writer.write()
+        writer.close()
