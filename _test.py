@@ -2,29 +2,22 @@ from tokenizer import Tokenizer
 
 a = Tokenizer(
     """
- {
-    // v2.2 testing
-    var x_1: i32;
-    Print("Entrou");
-    
-    x_1 = Read();
-    if ((x_1 > 1) && !(x_1 < 1)) {
-        x_1 = 3;
-    }
-    else {
-        {
-        x_1 = (-20+30)*4*3/40;;;;; // teste de comentario
-        }
-    }
-    Print(x_1);
-    x_1 = Read();
-    if ((x_1 > 1) && !(x_1 < 1))
-        x_1 = 3;
-    else
-        x_1 = (-20+30)*12/40;;;;;
+fn soma(a: i32, y: i32) -> i32 {
+    var a: i32;
+    a = x + y;
+    Print(a);
+    return a;
+}
 
-    Print(x_1);
-    while ((x_1 > 1) || (x_1 == 1)) {x_1 = x_1 - 1;Print(x_1);}}
+
+fn Main() {
+    var a: i32;
+    var b: i32;
+    a = 3;
+    b = soma(a, 4);
+    Print(a);
+    Print(b);
+}
 """
 )
 

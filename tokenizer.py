@@ -45,6 +45,7 @@ class Tokenizer:
             ":": "COLON",
             '"': "STRING",
             ",": "COMMA",
+            "->": "ARROW",
         }
 
         self.reserved_words = {
@@ -56,6 +57,9 @@ class Tokenizer:
             "var": "VAR",
             "i32": "INT_TYPE",
             "String": "STRING_TYPE",
+            "fn": "FUNCTION",
+            "return": "RETURN",
+            "Main": "MAIN",
         }
 
         self.selectNext()
@@ -90,6 +94,9 @@ class Tokenizer:
                             self.position += 2
                         elif token == "|" and source[i + 1] == "|":
                             self.next = Token(self.operations["|"], "||")
+                            self.position += 2
+                        elif token == "-" and source[i + 1] == ">":
+                            self.next = Token(self.operations["->"], "->")
                             self.position += 2
                         elif token == '"':
                             self.position += 1

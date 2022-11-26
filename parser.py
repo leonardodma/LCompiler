@@ -4,13 +4,98 @@ from node import *
 
 class Parser:
     tokenizer = None
-    statment_semicolon = ["PRINT", "IDENTIFIER", "VAR"]
+    statment_semicolon = ["PRINT", "IDENTIFIER", "VAR", "RETURN"]
     statment_brackets = ["IF", "WHILE"]
 
     relationExpression = ["EQUAL", "GREATER", "LESS", "DOT"]
     expression = ["PLUS", "MINUS", "OR"]
     term = ["MULT", "DIV", "AND"]
     factor = ["PLUS", "MINUS", "NOT"]
+
+    @staticmethod
+    def parseProgram():
+        nodes = []
+        while Parser.tokenizer.next.type != "EOP":
+            node = Parser.parseDeclaration()
+            nodes.append(node)
+
+        Parser.tokenizer.selectNext()
+
+        # Add main function func call
+        nodes.append(FuncCall("Main", []))
+
+        return Block("Program", nodes)
+
+    @staticmethod
+    def parseDeclaration():
+        if Parser.tokenizer.next.type == "FUNCTION":
+            Parser.tokenizer.selectNext()
+            function_identifier = Parser.tokenizer.next.value
+            Parser.tokenizer.selectNext()
+
+            if Parser.tokenizer.next.type != "OPEN_PARENTHESES":
+                raise ValueError("Expected '(' after function identifier")
+            Parser.tokenizer.selectNext()
+
+            arguments: list[FuncDec] = []
+            var_identifiers: list[str] = []
+            while Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
+                if var_identifiers == []:
+                    if Parser.tokenizer.next.type != "IDENTIFIER":
+                        raise ValueError("Expected identifier after '('")
+
+                    var_identifier = Parser.tokenizer.next.value
+                    var_identifiers = [var_identifier]
+                    Parser.tokenizer.selectNext()
+
+                if Parser.tokenizer.next.type == "COMMA":
+                    while Parser.tokenizer.next.type == "COMMA":
+                        Parser.tokenizer.selectNext()
+                        if Parser.tokenizer.next.type != "IDENTIFIER":
+                            raise ValueError("Expected identifier after ','")
+
+                        var_identifiers.append(Parser.tokenizer.next.value)
+                        Parser.tokenizer.selectNext()
+
+                elif Parser.tokenizer.next.type == "COLON":
+                    Parser.tokenizer.selectNext()
+                    if Parser.tokenizer.next.type not in ["STRING_TYPE", "INT_TYPE"]:
+                        raise ValueError("Expected variable type after ':'")
+
+                    var_type = Parser.tokenizer.next.value
+                    Parser.tokenizer.selectNext()
+
+                    if Parser.tokenizer.next.type == "COMMA":
+                        Parser.tokenizer.selectNext()
+
+                    arguments.append(VarDec(var_type, var_identifiers))
+                    var_identifiers = []
+
+            # var declarations made, stored in arguments
+            Parser.tokenizer.selectNext()
+            function_type = "VOID" if function_identifier != "Main" else "MAIN"
+            if Parser.tokenizer.next.type == "ARROW":
+                # get return type
+                Parser.tokenizer.selectNext()
+                function_type = Parser.tokenizer.next.value
+                if function_type not in ["i32", "String"]:
+                    raise ValueError("Expected variable type i32 or String after '->'")
+                Parser.tokenizer.selectNext()
+
+            # Create children of funcdec
+            children = [Identifier("function", [function_identifier])]
+
+            # Add arguments to children
+            for argument in arguments:
+                children.append(argument)
+
+            # add the block node
+            children.append(Parser.parseBlock())
+
+            return FuncDec(function_type, children)
+
+        else:
+            raise ValueError("Invalid declaration of function")
 
     @staticmethod
     def parseBlock():
@@ -35,10 +120,11 @@ class Parser:
         if Parser.tokenizer.next.type == "SEMICOLON":
             Parser.tokenizer.selectNext()
             return NoOp("NOP", [])
+
         elif Parser.tokenizer.next.type in Parser.statment_semicolon:
             if Parser.tokenizer.next.type == "VAR":
                 Parser.tokenizer.selectNext()
-                variables = []
+                var_identifiers = []
                 var_declaration = True
                 while var_declaration:
                     if Parser.tokenizer.next.type != "IDENTIFIER":
@@ -46,7 +132,7 @@ class Parser:
                             "Invalid sintax: variable declaration must start with identifier"
                         )
 
-                    variables.append(Parser.tokenizer.next.value)
+                    var_identifiers.append(Parser.tokenizer.next.value)
                     Parser.tokenizer.selectNext()
                     if Parser.tokenizer.next.type != "COMMA":
                         var_declaration = False
@@ -68,24 +154,30 @@ class Parser:
                     )
                 Parser.tokenizer.selectNext()
 
-                value = VarDec(var_type, variables)
+                value = VarDec(var_type, var_identifiers)
 
             elif Parser.tokenizer.next.type == "IDENTIFIER":
                 identifier_token = Parser.tokenizer.next.value
-                identifier = Identifier(identifier_token, [])
-
+                identifier = Identifier("variable", [identifier_token])
                 Parser.tokenizer.selectNext()
 
-                if Parser.tokenizer.next.type != "ASSIGNMENT":
-                    raise ValueError(
-                        f"Invalid sintax: assignment of '{identifier_token}' did not use '='"
+                # Var assignment
+                if Parser.tokenizer.next.type == "ASSIGNMENT":
+                    Parser.tokenizer.selectNext()
+                    value = Assignment(
+                        "Assigment", [identifier, Parser.parseRelationExpression()]
                     )
+                # Function call
+                elif Parser.tokenizer.next.type == "OPEN_PARENTHESES":
+                    Parser.tokenizer.selectNext()
+                    arguments = []
+                    while Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
+                        arguments.append(Parser.parseRelationExpression())
+                        if Parser.tokenizer.next.type == "COMMA":
+                            Parser.tokenizer.selectNext()
 
-                Parser.tokenizer.selectNext()
-
-                value = Assignment(
-                    "Assigment", [identifier, Parser.parseRelationExpression()]
-                )
+                    Parser.tokenizer.selectNext()
+                    value = FuncCall(identifier_token, arguments)
 
             elif Parser.tokenizer.next.type == "PRINT":
                 Parser.tokenizer.selectNext()
@@ -100,6 +192,10 @@ class Parser:
                     raise ValueError("Invalid sintax: print must have ')'")
 
                 Parser.tokenizer.selectNext()
+
+            elif Parser.tokenizer.next.type == "RETURN":
+                Parser.tokenizer.selectNext()
+                value = Return("RETURN", [Parser.parseRelationExpression()])
 
             # Check if the statement ends with ';'
             if Parser.tokenizer.next.type != "SEMICOLON":
@@ -197,9 +293,21 @@ class Parser:
             return value
 
         elif Parser.tokenizer.next.type == "IDENTIFIER":
-            value = Identifier(Parser.tokenizer.next.value, [])
+            identifier_token = Parser.tokenizer.next.value
+            identifier = Identifier("variable", [identifier_token])
             Parser.tokenizer.selectNext()
-            return value
+            if Parser.tokenizer.next.type == "OPEN_PARENTHESES":
+                Parser.tokenizer.selectNext()
+                arguments = []
+                while Parser.tokenizer.next.type != "CLOSE_PARENTHESES":
+                    arguments.append(Parser.parseRelationExpression())
+                    if Parser.tokenizer.next.type == "COMMA":
+                        Parser.tokenizer.selectNext()
+
+                Parser.tokenizer.selectNext()
+                return FuncCall(identifier_token, arguments)
+
+            return identifier
 
         elif Parser.tokenizer.next.type in Parser.factor:
             op = Parser.tokenizer.next.value
@@ -242,8 +350,6 @@ class Parser:
     @staticmethod
     def run(code):
         Parser.tokenizer = Tokenizer(code)
-        blocks = Parser.parseBlock()
-        if Parser.tokenizer.next.type != "EOP":
-            raise ValueError("Invalid sintax: block must end with '}'")
-
-        blocks.evaluate()
+        symbol_table = SymbolTable()
+        blocks = Parser.parseProgram()
+        blocks.evaluate(symbol_table)
